@@ -2,44 +2,76 @@
 #include "MeshReader.h"
 
 #include <algorithm>
+#include <limits>
 
 using namespace Angel;
 
 #define EPSILON 0.00001
+
+const GLfloat FLOAT_MAX = std::numeric_limits<float>::max();
+const GLfloat FLOAT_MIN = -FLOAT_MAX;
 
 size_t vertex_count;
 size_t quad_count;
 
 GLfloat zoom_multiplier = 1.6f;
 
-GLfloat scale = 1.0f;
 GLfloat angles[3] = {0.0f, 0.0f, 0.0f};
 point4 location(0.0f, 0.0f, 0.0f, 1.0f);
 
-GLfloat x_max = -100.0f;
-GLfloat x_min = 100.0f;
-GLfloat y_max = -100.0f;
-GLfloat y_min = 100.0f;
-GLfloat z_max = -100.0f;
-GLfloat z_min = 100.0f;
+GLfloat x_max = FLOAT_MIN;
+GLfloat x_min = FLOAT_MAX;
+GLfloat y_max = FLOAT_MIN;
+GLfloat y_min = FLOAT_MAX;
+GLfloat z_max = FLOAT_MIN;
+GLfloat z_min = FLOAT_MAX;
 
 point4 center;
 GLfloat radius;
 
 GLfloat projection_handle;
 GLfloat angle_handle;
-GLfloat scale_handle;
 GLfloat position_handle;
-
-const float MIN_VALUE = -1.0f;
-const float MAX_VALUE = -1.0f;
-
-bool useStandardDiagonals = true;
+GLfloat center_handle;
 
 std::string mesh_file;
 std::string stats_file;
 
 std::vector<Quadrilateral> quadrilateralList;
+
+void update_minmax(point4 vertex) {
+
+	// Decide the maximum value of x
+	if (vertex.x > x_max) {
+		x_max = vertex.x;
+	}
+
+	// Decide the minimum value of x
+	if (vertex.x < x_min) {
+		x_min = vertex.x;
+	}
+
+	// Decide the maximum value of y
+	if (vertex.y > y_max) {
+		y_max = vertex.y;
+	}
+
+	// Decide the minimum value of y
+	if (vertex.y < y_min) {
+		y_min = vertex.y;
+	}
+
+	// Decide the maximum value of z
+	if (vertex.z > z_max) {
+		z_max = vertex.z;
+	}
+
+	// Decide the minimum value of z
+	if (vertex.z < z_min) {
+		z_min = vertex.z;
+	}
+
+}
 
 void calculate_bounding_box() {
 
@@ -55,26 +87,23 @@ void calculate_bounding_box() {
 	if (abs(z_min - center.z) > radius) radius = abs(z_min - center.z);
 }
 
-void reset_options() {
+void reset() {
 
 	// Reset the rotation
 	angles[0] = 0.0f;
 	angles[1] = 0.0f;
 	angles[2] = 0.0f;
 
-	// Reset the scale
-	scale = 1.0f;
-
 	// Reset the position
 	location = point4(0.0f, 0.0f, 0.0f, 1.0f);
 
 	// Reset the bounding box
-	x_max = -100.0f;
-	x_min = 100.0f;
-	y_max = -100.0f;
-	y_min = 100.0f;
-	z_max = -100.0f;
-	z_min = 100.0f;
+	x_max = FLOAT_MIN;
+	x_min = FLOAT_MAX;
+	y_max = FLOAT_MIN;
+	y_min = FLOAT_MAX;
+	z_max = FLOAT_MIN;
+	z_min = FLOAT_MAX;
 }
 
 void initialize() {
@@ -106,27 +135,15 @@ void initialize() {
 		// Get the current quadrilateral from the list
 		Quadrilateral quadrilateral = quadrilateralList[i];
 
-		// Add the vertices for the first triangle depending on which diagonal is used
-		if (useStandardDiagonals) {
-			points[i * 6] = quadrilateral.getVertexA();
-			points[i * 6 + 1] = quadrilateral.getVertexB();
-			points[i * 6 + 2] = quadrilateral.getVertexD();
-		} else {
-			points[i * 6] = quadrilateral.getVertexA();
-			points[i * 6 + 1] = quadrilateral.getVertexB();
-			points[i * 6 + 2] = quadrilateral.getVertexC();
-		}
+		// Add the vertices for the first triangle
+		points[i * 6] = quadrilateral.getVertexA();
+		points[i * 6 + 1] = quadrilateral.getVertexB();
+		points[i * 6 + 2] = quadrilateral.getVertexD();
 
 		// Add the vertices for the second triangle
-		if (useStandardDiagonals) {
-			points[i * 6 + 3] = quadrilateral.getVertexC();
-			points[i * 6 + 4] = quadrilateral.getVertexD();
-			points[i * 6 + 5] = quadrilateral.getVertexB();
-		} else {
-			points[i * 6 + 3] = quadrilateral.getVertexD();
-			points[i * 6 + 4] = quadrilateral.getVertexA();
-			points[i * 6 + 5] = quadrilateral.getVertexC();
-		}
+		points[i * 6 + 3] = quadrilateral.getVertexC();
+		points[i * 6 + 4] = quadrilateral.getVertexD();
+		points[i * 6 + 5] = quadrilateral.getVertexB();
 
 		// Calculate the color of the quadrilateral by normalizing the metric values to range between 0 and 1
 		float colorValue = statisticsList[i] * normalizationFactor;
@@ -144,16 +161,6 @@ void initialize() {
 		colors[i * 6 + 3] = currentColor;
 		colors[i * 6 + 4] = currentColor;
 		colors[i * 6 + 5] = currentColor;
-
-		// Add the normals for the first triangle
-		// normals[i * 6] = quadrilateral.getNormalA();
-		// normals[i * 6 + 1] = quadrilateral.getNormalA();
-		// normals[i * 6 + 2] = quadrilateral.getNormalA();
-
-		// Add the normals for the second triangle
-		// normals[i * 6 + 3] = quadrilateral.getNormalC();
-		// normals[i * 6 + 4] = quadrilateral.getNormalC();
-		// normals[i * 6 + 5] = quadrilateral.getNormalC();
 	}
 
 	// Pick 100 random points and find the approximate bounding box of the object
@@ -163,26 +170,8 @@ void initialize() {
 		int index = rand() % vertex_count;
 		point4 current = points[index];
 
-		// Decide the maximum and minimum values of x
-		if (current.x > x_max) {
-			x_max = current.x;
-		} else if (current.x < x_min) {
-			x_min = current.x;
-		}
-
-		// Decide the maximum and minimum values of y
-		if (current.y > y_max) {
-			y_max = current.y;
-		} else if (current.y < y_min) {
-			y_min = current.y;
-		}
-
-		// Decide the maximum and minimum values of z
-		if (current.z > z_max) {
-			z_max = current.z;
-		} else if (current.z < z_min) {
-			z_min = current.z;
-		}
+		// Update minimum and maximum locations according to the point
+		update_minmax(current);
 	}
 
 	// Find the center and the radius of the bounding box
@@ -200,11 +189,9 @@ void initialize() {
 	GLuint buffer;
 	glGenBuffers(1, &buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	// glBufferData(GL_ARRAY_BUFFER, buffer_size + sizeof(vec3) * vertex_count, NULL, GL_STATIC_DRAW);
 	glBufferData(GL_ARRAY_BUFFER, 2 * buffer_size, NULL, GL_STATIC_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, buffer_size, points);
 	glBufferSubData(GL_ARRAY_BUFFER, buffer_size, buffer_size, colors);
-	// glBufferSubData(GL_ARRAY_BUFFER, buffer_size, sizeof(vec3) * vertex_count, normals);
 
 	// Load shaders and use the resulting shader program
 	GLuint program = InitShader("vshader.glsl", "fshader.glsl");
@@ -220,45 +207,11 @@ void initialize() {
 	glEnableVertexAttribArray(color);
 	glVertexAttribPointer(color, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(buffer_size));
 
-	// Initialize the normal attribute from the vertex shader
-	// GLuint normal = glGetAttribLocation(program, "vNormal");
-	// glEnableVertexAttribArray(normal);
-	// glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(buffer_size));
-
-	// Generate random material color
-	// float red = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX));
-	// float green = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX));
-	// float blue = static_cast<float>(rand()) / (static_cast<float>(RAND_MAX));
-	// color4 material(red, green, blue, 1.0);
-
-	// Specify the position of light source
-	// point4 light_position(0.0, 0.0, -20.0, 0.0);
-
-	// Specify the components of light source
-	// color4 light_ambient(0.2, 0.2, 0.2, 1.0);
-	// color4 light_diffuse(1.0, 1.0, 1.0, 1.0);
-	// color4 light_specular(1.0, 1.0, 1.0, 1.0);
-
-	// Specify the shininess coefficient for specular reflectivity
-	// float material_shininess = 100.0;
-
-	// Calculate the products of lighting components
-	// color4 ambient_product = light_ambient * material;
-	// color4 diffuse_product = light_diffuse * material;
-	// color4 specular_product = light_specular * material;
-
-	// Get the light values to the shader
-	// glUniform4fv(glGetUniformLocation(program, "ambientProduct"), 1, ambient_product);
-	// glUniform4fv(glGetUniformLocation(program, "diffuseProduct"), 1, diffuse_product);
-	// glUniform4fv(glGetUniformLocation(program, "specularProduct"), 1, specular_product);
-	// glUniform4fv(glGetUniformLocation(program, "lightPosition"), 1, light_position);
-	// glUniform1f(glGetUniformLocation(program, "shininess"), material_shininess);
-
 	// Get the uniform variables from the shader
 	projection_handle = glGetUniformLocation(program, "projection");
 	angle_handle = glGetUniformLocation(program, "theta");
-	scale_handle = glGetUniformLocation(program, "scale");
 	position_handle = glGetUniformLocation(program, "location");
+	center_handle = glGetUniformLocation(program, "center");
 
 	// Enable z-buffer algorithm for hidden surface removal
 	glEnable(GL_DEPTH_TEST);
@@ -272,7 +225,6 @@ void initialize() {
 	// Release the memory
 	delete[] points;
 	delete[] colors;
-	// delete[] normals;
 }
 
 void display() {
@@ -282,14 +234,14 @@ void display() {
 
 	// Load current angle and position to the vertex shader
 	glUniform3fv(angle_handle, 1, angles);
-	glUniform1f(scale_handle, scale);
 	glUniform4fv(position_handle, 1, location);
+	glUniform4fv(center_handle, 1, center);
 
 	// Calculate the zoom amount
 	GLfloat zoom = radius * zoom_multiplier;
 
 	// Set the projection matrix in shaders
-	mat4 projection_matrix = Ortho(center.x - zoom, center.x + zoom, center.y - zoom, center.y + zoom, center.z - zoom, center.z + zoom);
+	mat4 projection_matrix = Ortho(-zoom, zoom, -zoom, zoom, zoom, -zoom);
 	glUniformMatrix4fv(projection_handle, 1, GL_TRUE, projection_matrix);
 
 	// Render the points in GPU
@@ -321,12 +273,8 @@ void keyboard(unsigned char key, int x, int y) {
 	case 'Z':
 		location.z -= radius / 100;
 		break;
-	case 'c':
-		useStandardDiagonals = !useStandardDiagonals;
-		initialize();
-		break;
 	case 'r':
-		reset_options();
+		reset();
 		break;
 	}
 
@@ -389,10 +337,10 @@ void arrow(int key, int x, int y) {
 	// Arrow keys
 	switch (key) {
 	case GLUT_KEY_UP:
-		angles[0] += 2.0f;
+		angles[0] -= 2.0f;
 		break;
 	case GLUT_KEY_DOWN:
-		angles[0] -= 2.0f;
+		angles[0] += 2.0f;
 		break;
 	case GLUT_KEY_LEFT:
 		angles[1] -= 2.0f;
