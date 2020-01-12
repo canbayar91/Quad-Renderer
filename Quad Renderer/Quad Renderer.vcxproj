@@ -76,11 +76,11 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Can\Documents\OpenGL Library\glew-2.1.0\include;C:\Users\Can\Documents\OpenGL Library\freeglut-3.0.0\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Can.000\Documents\OpenGL Library\glew-2.1.0\include;C:\Users\Can.000\Documents\OpenGL Library\freeglut-3.0.0\include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>C:\Users\Can\Documents\OpenGL Library\glew-2.1.0\lib\Release\Win32;C:\Users\Can\Documents\OpenGL Library\freeglut-3.0.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\Can.000\Documents\OpenGL Library\glew-2.1.0\lib\Release\Win32;C:\Users\Can.000\Documents\OpenGL Library\freeglut-3.0.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>opengl32.lib;glew32.lib;freeglut.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
